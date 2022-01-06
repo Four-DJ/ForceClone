@@ -1,12 +1,16 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MelonLoader;
+using UnhollowerRuntimeLib;
 using UnityEngine;
 using UnityEngine.UI;
+using VRC.UI.Core;
+using VRC.UI.Core.Styles;
 
 [assembly: MelonLoader.MelonGame("VRChat", "VRChat")]
 [assembly: MelonLoader.MelonInfo(typeof(ForceClone.Main), "ForceClone", "1.0", "Four_DJ")]
@@ -15,50 +19,33 @@ namespace ForceClone
 {
     public class Main : MelonMod
     {
-        private static Button forceCloneButton;
-        private static Text forceCloneText;
-
         public override void OnApplicationStart()
         {
-            this.HarmonyInstance.Patch(typeof(UserInteractMenu).GetMethod("Update"), new HarmonyMethod(AccessTools.Method(typeof(Main), nameof(UserInteractUpdate))));
+            ClassInjector.RegisterTypeInIl2Cpp<SelectUserMenu>();
+            MelonCoroutines.Start(OnUiManagerInitCoroutine());
         }
 
-        private static bool UserInteractUpdate(UserInteractMenu __instance)
+        //https://github.com/RinLovesYou/QuickMenuLib/blob/master/QuickMenuLib/QuickMenuLibMod.cs
+        private IEnumerator OnUiManagerInitCoroutine()
         {
-            if (forceCloneButton != null)
-            {
-                if (QuickMenu.prop_QuickMenu_0.prop_APIUser_0 != null)
-                {
-                    if (QuickMenu.prop_QuickMenu_0.field_Public_MenuController_0.activeAvatar.releaseStatus == "private")
-                    {
-                        forceCloneText.text = "Private";
-                        forceCloneText.color = Color.gray;
-                        forceCloneButton.interactable = false;
-                    }
-                    else if (!QuickMenu.prop_QuickMenu_0.prop_APIUser_0.allowAvatarCopying)
-                    {
-                        forceCloneText.text = "Force Clone";
-                        forceCloneText.color = Color.red;
-                        forceCloneButton.interactable = true;
-                    }
-                    else
-                    {
-                        forceCloneText.text = "Clone";
-                        forceCloneText.color = Color.green;
-                        forceCloneButton.interactable = true;
-                    }
-                }
-            }
-            else
-            {
-                GameObject forceCloneObject = UnityEngine.Object.Instantiate(__instance.field_Public_Button_1.gameObject, __instance.transform, true);
-                forceCloneButton = forceCloneObject.GetComponentInChildren<Button>();
-                forceCloneText = forceCloneObject.GetComponentInChildren<Text>();
-                forceCloneButton.onClick = __instance.field_Public_Button_1.onClick;
-                __instance.field_Public_Button_1.gameObject.transform.localScale = new Vector3(0, 0, 0);
+            while (VRCUiManager.prop_VRCUiManager_0 == null) yield return null;
 
-            }
-            return false;
+            while (UIManager.field_Private_Static_UIManager_0 == null)
+                yield return null;
+            while (GameObject.Find("UserInterface").GetComponentInChildren<VRC.UI.Elements.QuickMenu>(true) == null)
+                yield return null;
+            SelectUserMenu SelectUserMenu = FindInactive("UserInterface/Canvas_QuickMenu(Clone)/Container/Window/QMParent/Menu_SelectedUser_Local").AddComponent<SelectUserMenu>();
+            while (SelectUserMenu.StyleEngine == null)
+                SelectUserMenu.StyleEngine = FindInactive("UserInterface/Canvas_QuickMenu(Clone)").GetComponent<StyleEngine>();
+        }
+
+        //https://github.com/knah/VRCMods/blob/master/UIExpansionKit/UnityUtils.cs
+        public static GameObject FindInactive(string path)
+        {
+            var split = path.Split(new[] { '/' }, 2);
+            var rootObject = GameObject.Find($"/{split[0]}")?.transform;
+            if (rootObject == null) return null;
+            return Transform.FindRelativeTransformWithPath(rootObject, split[1], false)?.gameObject;
         }
     }
 }
