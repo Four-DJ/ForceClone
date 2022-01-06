@@ -13,7 +13,7 @@ using VRC.UI.Core;
 using VRC.UI.Core.Styles;
 
 [assembly: MelonLoader.MelonGame("VRChat", "VRChat")]
-[assembly: MelonLoader.MelonInfo(typeof(ForceClone.Main), "ForceClone", "1.0", "Four_DJ")]
+[assembly: MelonLoader.MelonInfo(typeof(ForceClone.Main), "ForceClone", "1.1", "Four_DJ")]
 
 namespace ForceClone
 {
